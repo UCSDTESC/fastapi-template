@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatroom</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .join-left {
+            text-align: center;
+        }
+
+        .from-me {
+            text-align: right;
+        }
+
+        .from-others {
+            text-align: left;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container">
+        <div class="card mt-5">
+            <div class="card-header bg-primary text-white text-center">Chatroom</div>
+            <div class="card-body">
+                <div class="mb-3 d-flex align-items-center">
+                    <input type="text" id="usernameInput" class="form-control me-2" placeholder="Enter your username">
+                    <button id="connectBtn" class="btn btn-primary" onclick="connect()">Connect</button>
+                </div>
+                <div class="mb-3">
+                    <div id="messageContainer" class="border p-3" style="height: 300px; overflow-y: auto;"></div>
+                </div>
+                <div class="mb-3" id="messageBox" style="display: none;">
+                    <input type="text" id="messageInput" class="form-control me-2" placeholder="Type your message...">
+                    <button id="sendMessageBtn" class="btn btn-primary" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+            <div class="card-footer text-muted text-center" id="connectionStatus">Disconnected</div>
+        </div>
+    </div>
+
+    <script>
+        let ws;
+        let currentUser;
+
+        function connect() {
+            currentUser = document.getElementById('usernameInput').value;
+            ws = new WebSocket(`ws://localhost:8000/chat/${currentUser}`);
+
+            ws.onopen = () => {
+                console.log('Connected to server');
+                document.getElementById('connectionStatus').innerText = 'Connected';
+                document.getElementById('connectionStatus').classList.remove('text-danger');
+                document.getElementById('connectionStatus').classList.add('text-success');
+                document.getElementById('usernameInput').style.display = 'none';
+                document.getElementById('connectBtn').style.display = 'none';
+                document.getElementById('messageBox').style.display = 'flex';
+            };
+
+            ws.onmessage = (event) => {
+                const message = event.data;
+                displayMessage(message);
+            };
+
+            ws.onclose = () => {
+                console.log('Disconnected from server');
+                document.getElementById('connectionStatus').innerText = 'Disconnected';
+                document.getElementById('connectionStatus').classList.remove('text-success');
+                document.getElementById('connectionStatus').classList.add('text-danger');
+                document.getElementById('usernameInput').style.display = 'block';
+                document.getElementById('connectBtn').style.display = 'block';
+                document.getElementById('messageBox').style.display = 'none';
+            };
+        }
+
+        function sendMessage() {
+            const message = document.getElementById('messageInput').value; // Retrieve message from input field
+            ws.send(message);
+            document.getElementById('messageInput').value = ''; // Clear input field after sending
+        }
+
+        function displayMessage(message) {
+            const messageContainer = document.getElementById('messageContainer');
+            const messageElement = document.createElement('div');
+            messageElement.innerText = message;
+            messageElement.classList.add('message', 'p-2', 'mb-2');
+            if (message.startsWith(currentUser)) {
+                messageElement.classList.add('from-me');
+            } else {
+                if (message.includes('joined') && !message.startsWith('User ' + currentUser + ' joined')) {
+                    messageElement.classList.add('join-left');
+                } else {
+                    if (message.includes('left')) { // Add condition for "left" messages
+                        messageElement.classList.add('join-left');
+                    } else {
+                        messageElement.classList.add('from-others');
+                    }
+                }
+            }
+            messageContainer.appendChild(messageElement);
+            messageContainer.scrollTop = messageContainer.scrollHeight;
+        }
+
+        // Enable pressing Enter to send message
+        document.getElementById('messageInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
