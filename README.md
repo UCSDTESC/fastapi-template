@@ -23,9 +23,9 @@ uvicorn main:app --reload
 
 ## Template 2 (Chatroom)
 To run the Chatroom application:
-1. Navigate to the Todolist directory:
+1. Navigate to the Chatroom directory:
 ```bash
-cd todolist
+cd chatroom
 ```
 
 2. Start the application:
